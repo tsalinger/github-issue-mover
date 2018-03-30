@@ -15,7 +15,4 @@
 // @grant       GM_getValue
 // @run-at      document-end
 
-/** Script needs to be activated when a new issue with our unique sign is created */
-// @match       https://github.com/*/issues/new?title*zzqqjfafsfalsjafslQ
-
 // ==/UserScript==

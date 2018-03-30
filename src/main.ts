@@ -1,12 +1,14 @@
 import { Dom, Selectors } from './dom';
+// @ts-ignore
+import { BODY_UNIQUE_SIGN } from './uniqueSign';
 
 (function () {
     /**
-     * There are 2 activation events and both are found in config/settings.js:
+     * There are 2 activation events and both can be found in config/settings.js:
      * 1. Whenever an issue is opened in the origin repo, e.g. https://github.com/tsalinger/github-issue-mover/issues/*
-     * 2. Whenever a new issue has been created that starts with 'https://github.com/*\/issues/new?' and ends on @param BODY_UNIQUE_SIGN
+     * 2. Whenever a new issue has been created that starts with 'https://github.com/*\/issues/new?' and ends on BODY_UNIQUE_SIGN
      */
-    const BODY_UNIQUE_SIGN: string = 'zzqqjfafsfalsjafslQ';
+
     const GM_DATA_KEY: string = 'issue-data';
 
     class CommentData {

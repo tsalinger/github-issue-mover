@@ -10,8 +10,9 @@ var uglify = require('gulp-uglify');
 var buffer = require('vinyl-buffer');
 var glob = require('glob');
 var babel = require('gulp-babel');
+var BODY_UNIQUE_SIGN = require('./src/uniqueSign.json').BODY_UNIQUE_SIGN;
 
-var headerSettings = fs.readFileSync('config/settings.js', 'utf-8');
+var tampermonkeyHeader = getModifiedTampermonkeyHeader();
 
 var watchedBrowserify = watchify(browserify({
     basedir: '.',
@@ -30,8 +31,18 @@ function bundle() {
             presets: ['env']
         }))
         .pipe(uglify())
-        .pipe(ginsert.prepend(headerSettings))
+        .pipe(ginsert.prepend(tampermonkeyHeader))
         .pipe(gulp.dest("dist"))
+}
+
+function getModifiedTampermonkeyHeader() {
+    var headerSettings = fs.readFileSync('config/settings.js', 'utf-8');
+    const idx = headerSettings.indexOf('// ==/UserScript==');
+    headerSettings = headerSettings.slice(0, idx) +
+        `/** Script needs to be activated when a new issue with our unique sign is created */\n` +
+        `// @match       https://github.com/*/issues/new?title*${BODY_UNIQUE_SIGN}\n\n` +
+        headerSettings.slice(idx);
+    return headerSettings;
 }
 
 gulp.task("default", bundle);
