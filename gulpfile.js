@@ -10,7 +10,7 @@ var uglify = require('gulp-uglify');
 var buffer = require('vinyl-buffer');
 var glob = require('glob');
 var babel = require('gulp-babel');
-var BODY_UNIQUE_SIGN = require('./src/uniqueSign.json').BODY_UNIQUE_SIGN;
+var BODY_UNIQUE_TOKEN = require('./src/uniqueToken.json').BODY_UNIQUE_TOKEN;
 
 var tampermonkeyHeader = getModifiedTampermonkeyHeader();
 
@@ -40,7 +40,7 @@ function getModifiedTampermonkeyHeader() {
     const idx = headerSettings.indexOf('// ==/UserScript==');
     headerSettings = headerSettings.slice(0, idx) +
         `/** Script needs to be activated when a new issue with our unique sign is created */\n` +
-        `// @match       https://github.com/*/issues/new?title*${BODY_UNIQUE_SIGN}\n\n` +
+        `// @match       https://github.com/*/issues/new?title*${BODY_UNIQUE_TOKEN}\n\n` +
         headerSettings.slice(idx);
     return headerSettings;
 }
