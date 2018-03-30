@@ -1,0 +1,45 @@
+{
+  "name": "github-issue-mover",
+  "version": "0.2.0",
+  "description": "Tampermonkey script to move GitHub issues",
+  "main": "index.js",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "browserify": "^16.1.1",
+    "gulp": "^3.9.1",
+    "gulp-append-prepend": "^1.0.4",
+    "gulp-babel": "^7.0.1",
+    "gulp-insert": "^0.5.0",
+    "gulp-minify": "^2.1.0",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-typescript": "^4.0.1",
+    "gulp-uglify": "^3.0.0",
+    "gulp-util": "^3.0.8",
+    "tsify": "^3.0.4",
+    "typescript": "^2.7.2",
+    "vinyl-buffer": "^1.0.1",
+    "vinyl-source-stream": "^2.0.0",
+    "watchify": "^3.11.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsalinger/github-issue-mover.git"
+  },
+  "keywords": [
+    "github",
+    "issue",
+    "mover",
+    "tampermonkey",
+    "script"
+  ],
+  "author": "Till Salinger",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tsalinger/github-issue-mover/issues"
+  },
+  "homepage": "https://github.com/tsalinger/github-issue-mover#readme"
+}
