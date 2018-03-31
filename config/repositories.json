@@ -1,8 +1,0 @@
-{
-    "repositories": [
-        "https://github.com/Microsoft/vscode-cpptools/issues",
-        "https://github.com/OmniSharp/omnisharp-vscode/issues",
-        "https://github.com/Microsoft/vscode-python/issues",
-        "https://github.com/redhat-developer/vscode-java/issues"
-    ]
-}

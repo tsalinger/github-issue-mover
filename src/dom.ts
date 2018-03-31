@@ -1,5 +1,5 @@
 // @ts-ignore
-import * as reposList from '../config/repositories';
+import * as config from '../config/config';
 
 export enum Selectors {
     bodyTextarea = 'textarea.comment-form-textarea',
@@ -11,7 +11,8 @@ export enum Selectors {
     avatar = '.timeline-comment-avatar',
     editButton = '.js-comment-edit-button',
     cancelButton = '.js-comment-cancel-button',
-    moveIssueButtonContainer = '.gh-header-show .gh-header-actions'
+    moveIssueButtonContainer = '.gh-header-show .gh-header-actions',
+    moveIssueButtonID = '#move-issue-button'
 }
 
 interface CommentInfo {
@@ -20,67 +21,64 @@ interface CommentInfo {
     avatar: string
 }
 
-interface MainComment extends CommentInfo {
+export interface MainComment extends CommentInfo {
     subject: string;
+    asString: string;
 }
 
 export class Dom {
-
-    private readonly moveIssueButtonID: string = 'move-issue-button';
-
-    public showUIButton(onClick: () => {}) {
-        const container = this.querySelectorThrows(Selectors.moveIssueButtonContainer, document);
-        container.appendChild(this.createUIButton(onClick));
+    public initMoveIssueButton(onClick: () => void) {
+        const button = document.createElement('button');
+        button.id = Selectors.moveIssueButtonID.replace('#', '');
+        'btn btn-sm'.split(' ').forEach(cls => button.classList.add(cls));
+        button.textContent = 'Move Issue';
+        this.querySelectorThrows(Selectors.moveIssueButtonContainer, document).appendChild(button);
+        button.addEventListener('click', onClick);
     }
 
-    public getMainComment(): MainComment {
+    public getMainComment(origIssueUrl: string): MainComment {
         const subject: string = this.getTextThrows(Selectors.subject, document);
-        const data = this.getComments(Selectors.mainComment)[0];
-        return { subject, ...data };
+        const data: CommentInfo = this.getComments(Selectors.mainComment)[0];
+        const asString: string = this.stringifyMainComment(data, origIssueUrl)
+        return { subject, ...data, asString };
     }
 
-    public showRepoURLInputAsync(): Promise<string> {
-        const promise: Promise<string> = new Promise((resolve, reject) => {
+    public initRepoSuggestInput(onSubmit: (destinationIssueURL: string) => void): void {
+        const input: HTMLInputElement = document.createElement('input');
+        input.type = 'url';
+        input.placeholder = 'Destination repo (https://github.com/tsalinger/github-issue-mover/issues)';
+        input.classList.add('form-control');
+        input.style.width = '38em';
+        input.style.marginLeft = '0.3em';
 
-            const input = document.createElement('input');
-            input.type = 'url';
-            input.placeholder = 'Destination repo, e.g. https://github.com/OmniSharp/omnisharp-vscode/issues';
-            input.classList.add('form-control');
-            input.style.width = '25em';
-            const dataList: HTMLDataListElement = document.createElement('datalist');
-            dataList.id = 'repositories';
-            input.setAttribute('list', dataList.id);
-            input.setAttribute('pattern', new RegExp('https?://github.com/.+/issues/?$').source);
-            const moveIssueButtonEl = document.getElementById(this.moveIssueButtonID);
-            input.addEventListener('keyup', (e: KeyboardEvent) => {
-                if (e.keyCode == 13) {
-                    if (input.validity.patternMismatch) {
-                        input.style.border = '1px solid red';
-                        reject();
-                    } else {
-                        input.style.border = '';
-                        const val: string = input.value;
-                        this.replaceDomElement(input, moveIssueButtonEl);
-                        resolve(val.endsWith('/') ? val : val + '/');
-                    }
+        const dataList: HTMLDataListElement = document.createElement('datalist');
+        dataList.id = 'repositories';
+        input.setAttribute('list', dataList.id);
+        (config.repositories.suggestDestinationRepos as string[]).forEach(repo => {
+            var option: HTMLOptionElement = document.createElement('option');
+            option.value = repo;
+            dataList.appendChild(option);
+        });
+        input.appendChild(dataList);
+
+        input.setAttribute('pattern', new RegExp('https?://github.com/.+/issues/?$').source);
+        input.addEventListener('keyup', (e: KeyboardEvent) => {
+            if (e.keyCode == 13) {
+                if (input.validity.patternMismatch) {
+                    input.style.border = '1px solid red';
+                } else {
+                    input.style.border = '';
+                    const val: string = input.value;
+                    onSubmit(val.endsWith('/') ? val : val + '/');
                 }
-            });
-
-            const repositories = Array.from(reposList.repositories) as string[];
-            repositories.forEach(repo => {
-                var option: HTMLOptionElement = document.createElement('option');
-                option.value = repo;
-                dataList.appendChild(option);
-            });
-
-            input.appendChild(dataList);
-            this.replaceDomElement(input, moveIssueButtonEl);
+            }
         });
 
-        return promise;
+        const moveIssueButtonEl: HTMLButtonElement = this.querySelectorThrows(Selectors.moveIssueButtonID, document);
+        moveIssueButtonEl.parentNode && moveIssueButtonEl.parentNode.replaceChild(input, moveIssueButtonEl);
     }
 
-    public generateMainCopy(info: CommentInfo, origIssueURL: string): string {
+    private stringifyMainComment(info: CommentInfo, origIssueURL: string): string {
         const matches = origIssueURL.match(new RegExp('https?://github.com/(.+/)+issues').source);
         if (!matches) {
             throw new Error('Could not extract the original issue URL');
@@ -92,71 +90,17 @@ export class Dom {
             `---\n\n`;
     }
 
-    public getFormattedFollowUpCommentsIfAny(): string[] {
-        return document.querySelector(Selectors.followUpComments)
-            ? this.getComments(Selectors.followUpComments).map(this.generateFollowUpCopy)
-            : [];
-    }
-
-    public querySelectorThrows<T extends HTMLElement>(selector: Selectors, container: HTMLElement | Document): T {
-        const el: T | null = container.querySelector(selector) as T;
-        if (!el) {
-            throw new Error(`Could not get element ${selector}`);
+    public getFollowUpCommentsIfAny(): string[] {
+        const commentEls = document.querySelector(Selectors.followUpComments);
+        if (commentEls) {
+            return this.getComments(Selectors.followUpComments)
+                .map((info) =>
+                    `>This is a reply from ${info.avatar}@${info.author}\n\n` +
+                    `${info.bodyText}\n\n` +
+                    `---\n\n`
+                )
         }
-        return el;
-    }
-
-
-    public getTextThrows(selector: Selectors, container: HTMLElement | Document): string {
-        const el: HTMLElement | null = this.querySelectorThrows(selector, container);
-        if (!el || !el.textContent) {
-            throw new ReferenceError(`Selector: '${selector}' failed.`);
-        }
-        return el.textContent.trim();
-    }
-
-    public setTextThrows(selector: Selectors, container: HTMLElement | Document, text: string): void {
-        const el: HTMLElement | null = this.querySelectorThrows(selector, container);
-        el.textContent = text;
-    }
-
-    private querySelectorAllThrows<T extends HTMLElement>(selector: Selectors, container: HTMLElement | Document): NodeListOf<T> {
-        const els: NodeListOf<T> | null = container.querySelectorAll(selector) as NodeListOf<T>;
-        if (!els || !els.length) {
-            throw new Error(`Could not get element ${selector}`);
-        }
-        return els;
-    }
-
-    private closestThrows<T extends HTMLElement>(selector: Selectors, container: HTMLElement) {
-        const el: T | null = container.closest(selector) as T;
-        if (!el) {
-            throw new Error(`Could not get closest element of ${selector}`);
-        }
-        return el;
-    }
-
-    private getButtonThrows(selector: Selectors, container: HTMLElement): HTMLButtonElement {
-        return this.querySelectorThrows(selector, container) as HTMLButtonElement;
-    }
-
-    private createUIButton(onClick: () => {}) {
-        const button = document.createElement('button');
-        button.id = this.moveIssueButtonID;
-        button.addEventListener('click', onClick);
-        'btn btn-sm'.split(' ').forEach(cls => button.classList.add(cls));
-        button.appendChild(document.createTextNode('Move Issue'));
-        return button;
-    }
-
-    private replaceDomElement(newEl: HTMLElement, oldEl: HTMLElement | null) {
-        oldEl && oldEl.parentNode && oldEl.parentNode.replaceChild(newEl, oldEl);
-    }
-
-    private generateFollowUpCopy(info: CommentInfo): string {
-        return `>This is a reply from ${info.avatar}@${info.author}\n\n` +
-            `${info.bodyText}\n\n` +
-            `---\n\n`;
+        return [];
     }
 
     private getComments(selector: Selectors.mainComment | Selectors.followUpComments): CommentInfo[] {
@@ -180,5 +124,41 @@ export class Dom {
     private getAvatar(comment: HTMLElement): string {
         const container = this.closestThrows(Selectors.commentsContainer, comment);
         return this.querySelectorThrows(Selectors.avatar, container).innerHTML.trim();
+    }
+
+    public querySelectorThrows<T extends HTMLElement>(selector: Selectors, container: HTMLElement | Document): T {
+        const el: T | null = container.querySelector(selector) as T;
+        if (!el) {
+            throw new Error(`Could not get element ${selector}`);
+        }
+        return el;
+    }
+
+    public getTextThrows(selector: Selectors, container: HTMLElement | Document): string {
+        const el: HTMLElement | null = this.querySelectorThrows(selector, container);
+        if (!el || !el.textContent) {
+            throw new ReferenceError(`Selector: '${selector}' failed.`);
+        }
+        return el.textContent.trim();
+    }
+
+    private querySelectorAllThrows<T extends HTMLElement>(selector: Selectors, container: HTMLElement | Document): NodeListOf<T> {
+        const els: NodeListOf<T> | null = container.querySelectorAll(selector) as NodeListOf<T>;
+        if (!els || !els.length) {
+            throw new Error(`Could not get element ${selector}`);
+        }
+        return els;
+    }
+
+    private closestThrows<T extends HTMLElement>(selector: Selectors, container: HTMLElement) {
+        const el: T | null = container.closest(selector) as T;
+        if (!el) {
+            throw new Error(`Could not get closest element of ${selector}`);
+        }
+        return el;
+    }
+
+    private getButtonThrows(selector: Selectors, container: HTMLElement): HTMLButtonElement {
+        return this.querySelectorThrows(selector, container) as HTMLButtonElement;
     }
 }
