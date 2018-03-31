@@ -6,7 +6,7 @@ There are 2 settings that you need to adapt:
 - ```sourceRepos``` are all the repos from which you want to move issues
 - ```suggestDestinationRepos``` are shown as suggestions in the input box
 
-To set these settings either edit the issueMover.js directly or edit config/config.json and run ```gulp```.
+To set these settings either edit the dist/issueMover.js directly or edit config/config.json and run ```gulp```.
 
 ## Activation Events
 There are 2 activation events (see config/config.json):
